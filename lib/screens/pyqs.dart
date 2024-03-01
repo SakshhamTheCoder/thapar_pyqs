@@ -1,13 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:thapar_pyqs/components/default_scaffold.dart';
-import 'package:html/parser.dart';
-import 'package:thapar_pyqs/utils/http_client.dart';
+import 'package:thapar_pyqs/utils/api_calls.dart';
 
 class PYQsPage extends StatefulWidget {
   final String courseCode;
@@ -19,32 +16,6 @@ class PYQsPage extends StatefulWidget {
 
 class _PYQsPageState extends State<PYQsPage> {
   Future<List>? _fetchPYQs;
-
-  Future<List> fetchPYQs() async {
-    final List pyqs = [];
-    final response =
-        await MyHttpClient().post('https://cl.thapar.edu/view1.php', {'ccode': widget.courseCode, 'submit': ''});
-    if (response.statusCode == 200) {
-      final document = parse(response.body);
-      final table = document.getElementsByTagName('table');
-      final rows = table[0].getElementsByTagName('tr');
-      for (var i = 0; i < rows.length; i++) {
-        if (i == 0 || i == 1) continue;
-        final cells = rows[i].getElementsByTagName('td');
-        pyqs.add({
-          'code': cells[0].text,
-          'name': cells[1].text,
-          'year': cells[2].text,
-          'semester': cells[3].text,
-          'type': cells[4].text,
-          'link': cells[5].getElementsByTagName('a')[0].attributes['href'],
-        });
-      }
-      return pyqs;
-    } else {
-      throw Exception('Failed to fetch PYQs');
-    }
-  }
 
   void downloadFile(String link, String name, String subtitle) async {
     showDialog(
@@ -59,18 +30,7 @@ class _PYQsPageState extends State<PYQsPage> {
         );
       },
     );
-
-    final response = await MyHttpClient().get('https://cl.thapar.edu/$link');
-    bool dirDownloadExists = true;
-    var dir = "/storage/emulated/0/Download/";
-    dirDownloadExists = await Directory(dir).exists();
-    if (dirDownloadExists) {
-      dir = "/storage/emulated/0/Download";
-    } else {
-      dir = "/storage/emulated/0/Downloads";
-    }
-    final file = File("$dir/$name $subtitle.pdf");
-    await file.writeAsBytes(response.bodyBytes);
+    var file = await APICalls.downloadPDFFromServer(link, name, subtitle);
 
     Navigator.pop(context);
 
@@ -93,7 +53,7 @@ class _PYQsPageState extends State<PYQsPage> {
               onPressed: () async {
                 Navigator.pop(context); // Close the download complete dialog
                 if (await Permission.audio.request().isGranted) {
-                  OpenFilex.open("$dir/$name $subtitle.pdf");
+                  OpenFilex.open(file.path);
                 } else {
                   showDialog(
                     context: context,
@@ -125,7 +85,7 @@ class _PYQsPageState extends State<PYQsPage> {
   @override
   void initState() {
     super.initState();
-    _fetchPYQs = fetchPYQs();
+    _fetchPYQs = APICalls.fetchPYQs(widget.courseCode);
   }
 
   @override

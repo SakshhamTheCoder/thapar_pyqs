@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DefaultScaffold extends StatelessWidget {
   final Widget child;
@@ -34,7 +35,10 @@ class DefaultScaffold extends StatelessWidget {
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            const url = 'https://github.com/SakshhamTheCoder/thapar_pyqs';
+                            await launchUrl(Uri.parse(url));
+                          },
                           child: const Text("Source Code"),
                         ),
                         TextButton(

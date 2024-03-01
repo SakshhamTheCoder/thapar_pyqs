@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:thapar_pyqs/components/default_scaffold.dart';
-import 'dart:convert';
 
 import 'package:thapar_pyqs/screens/pyqs.dart';
-import 'package:thapar_pyqs/utils/http_client.dart';
+import 'package:thapar_pyqs/utils/api_calls.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,21 +14,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TextEditingController _controller = TextEditingController();
-
-  Future<List<String>> fetchSuggestions(String query) async {
-    if (query.isEmpty || query == "") return [];
-    final response = await MyHttpClient().get('https://cl.thapar.edu/search1.php?term=$query');
-    if (response.statusCode == 200) {
-      try {
-        final data = jsonDecode(response.body);
-        return List<String>.from(data);
-      } catch (e) {
-        return [];
-      }
-    } else {
-      throw Exception('Failed to fetch suggestions');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +37,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 debounceDuration: const Duration(milliseconds: 500),
                 suggestionsCallback: (pattern) async {
-                  return await fetchSuggestions(pattern);
+                  return await APICalls.fetchSuggestions(pattern);
                 },
                 itemBuilder: (context, suggestion) {
                   return ListTile(
