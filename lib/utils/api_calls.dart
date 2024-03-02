@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:html/parser.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:thapar_pyqs/utils/http_client.dart';
 
 class APICalls {
@@ -47,15 +49,19 @@ class APICalls {
 
   static Future<File> downloadPDFFromServer(String link, String name, String subtitle) async {
     final response = await MyHttpClient().get('https://cl.thapar.edu/$link');
-    bool dirDownloadExists = true;
-    var dir = "/storage/emulated/0/Download/";
-    dirDownloadExists = await Directory(dir).exists();
-    if (dirDownloadExists) {
-      dir = "/storage/emulated/0/Download";
-    } else {
-      dir = "/storage/emulated/0/Downloads";
+    Directory dir;
+    var status = await Permission.manageExternalStorage.status;
+    if (!status.isGranted) {
+      await Permission.manageExternalStorage.request();
     }
-    final file = File("$dir/$name $subtitle.pdf");
+
+    if (Platform.isAndroid) {
+      dir = Directory("/storage/emulated/0/Download");
+    } else {
+      dir = (await getDownloadsDirectory())!;
+    }
+
+    final file = File("${dir.path}/$name $subtitle.pdf");
     await file.writeAsBytes(response.bodyBytes);
     return file;
   }

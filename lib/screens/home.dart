@@ -1,9 +1,12 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:thapar_pyqs/components/colored_button.dart';
 import 'package:thapar_pyqs/components/default_scaffold.dart';
 
 import 'package:thapar_pyqs/screens/pyqs.dart';
-import 'package:thapar_pyqs/utils/api_calls.dart';
+
+import '../components/autocomplete_field.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +16,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  TextEditingController _controller = TextEditingController();
+  TextEditingController controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -28,55 +31,8 @@ class _HomePageState extends State<HomePage> {
                   colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSecondaryContainer, BlendMode.srcATop),
                   child: Image.asset('assets/images/ti_logo.png', height: 200, width: 200)),
               const SizedBox(height: 20),
-              TypeAheadField(
-                autoFlipMinHeight: 200,
-                hideOnEmpty: true,
-                autoFlipDirection: true,
-                onSelected: (suggestion) {
-                  _controller.text = suggestion;
-                },
-                debounceDuration: const Duration(milliseconds: 500),
-                suggestionsCallback: (pattern) async {
-                  return await APICalls.fetchSuggestions(pattern);
-                },
-                itemBuilder: (context, suggestion) {
-                  return ListTile(
-                    title: Text(suggestion),
-                  );
-                },
-                builder: (context, controller, focusNode) {
-                  _controller = controller;
-                  return TextField(
-                    textCapitalization: TextCapitalization.characters,
-                    controller: controller,
-                    focusNode: focusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Enter course code',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                },
-                decorationBuilder: (context, child) {
-                  return Material(
-                    borderRadius: BorderRadius.circular(12),
-                    surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-                    elevation: 4.0,
-                    child: child,
-                  );
-                },
-                listBuilder: (context, children) {
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: children.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return children.elementAt(index);
-                    },
-                  );
-                },
-                errorBuilder: (context, error) {
-                  return const Text("Error fetching suggestions");
-                },
+              AutocompleteField(
+                textEditingController: controller,
               ),
               // Autocomplete<String>(
               //   optionsBuilder: (TextEditingValue textEditingValue) async {
@@ -130,22 +86,19 @@ class _HomePageState extends State<HomePage> {
               //   },
               // ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                  foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
+              ColoredButton(
+                child: const Text("Search for PYQs"),
                 onPressed: () {
-                  if (_controller.text.isEmpty) {
+                  log(controller.text);
+                  if (controller.text.isEmpty) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(const SnackBar(content: Text('Please enter a course code')));
                     return;
                   }
                   Navigator.push(
-                      context, MaterialPageRoute(builder: (context) => PYQsPage(courseCode: _controller.text)));
+                      context, MaterialPageRoute(builder: (context) => PYQsPage(courseCode: controller.text)));
                 },
-                child: const Text('Search for PYQs'),
-              ),
+              )
             ],
           ),
         ),

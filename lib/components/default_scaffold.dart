@@ -1,11 +1,46 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:thapar_pyqs/components/action_alert_dialog.dart';
+import 'package:thapar_pyqs/components/offline_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DefaultScaffold extends StatelessWidget {
+class DefaultScaffold extends StatefulWidget {
   final Widget child;
   final String title;
   const DefaultScaffold({super.key, required this.child, required this.title});
+
+  @override
+  State<DefaultScaffold> createState() => _DefaultScaffoldState();
+}
+
+class _DefaultScaffoldState extends State<DefaultScaffold> {
+  bool isOffline = false;
+  @override
+  void initState() {
+    super.initState();
+    Connectivity().checkConnectivity().then((value) {
+      if (value == ConnectivityResult.none) {
+        setState(() {
+          isOffline = true;
+        });
+      } else if (value == ConnectivityResult.mobile || value == ConnectivityResult.wifi) {
+        setState(() {
+          isOffline = false;
+        });
+      }
+    });
+    Connectivity().onConnectivityChanged.listen((event) {
+      if (event == ConnectivityResult.none) {
+        setState(() {
+          isOffline = true;
+        });
+      } else if (event == ConnectivityResult.mobile || event == ConnectivityResult.wifi) {
+        setState(() {
+          isOffline = false;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,35 +53,31 @@ class DefaultScaffold extends StatelessWidget {
                   barrierDismissible: false,
                   context: context,
                   builder: (context) {
-                    return AlertDialog(
+                    return ActionAlertDialog(
                       title: const Text("About"),
                       content: const Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              "This app is made to help students of Thapar Institute of Engineering and Technology to access previous year question papers directly from there mobile phones. It is not affiliated with the university. The app is open source and the code is available on GitHub. If you have any suggestions or feedback, please feel free to open an issue on GitHub."),
+                              "This app is made to help students of Thapar Institute of Engineering and Technology to access previous year question papers directly from their mobile phones."),
                           SizedBox(height: 10),
-                          Text("Version: 1.0.0"),
+                          Text(
+                              "The app is open source and the code is available on GitHub. If you have any suggestions or feedback, please feel free to open an issue on GitHub."),
                           SizedBox(height: 10),
+                          Text("It is not affiliated with the university."),
+                          SizedBox(height: 20),
                           Text("Developed by: Sakshham Bhagat"),
-                          SizedBox(height: 50),
-                          Text("Thank you for using the app!")
+                          SizedBox(height: 10),
+                          Text("Thank you for using this app!")
                         ],
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () async {
-                            const url = 'https://github.com/SakshhamTheCoder/thapar_pyqs';
-                            await launchUrl(Uri.parse(url));
-                          },
-                          child: const Text("Source Code"),
-                        ),
-                        TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text("Close")),
-                      ],
+                      action: () async {
+                        const url = 'https://github.com/SakshhamTheCoder/thapar_pyqs';
+                        await launchUrl(Uri.parse(url));
+                      },
+                      actionText: "Source Code",
+                      showCloseButton: true,
                     );
                   });
             },
@@ -55,44 +86,11 @@ class DefaultScaffold extends StatelessWidget {
         ],
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-        title: Text(title),
+        title: Text(widget.title),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: StreamBuilder(
-          stream: Connectivity().onConnectivityChanged,
-          builder: (context, snapshot) {
-            // Initially snapshot might be null, so use this to avoid errors
-            if (snapshot.connectionState == ConnectionState.none) {
-              return const CircularProgressIndicator();
-            } else {
-              ConnectivityResult? result = snapshot.data;
-              if (result == ConnectivityResult.none) {
-                return ColorFiltered(
-                  colorFilter: const ColorFilter.matrix([
-                    0.2126, 0.7152, 0.0722, 0, 0, //
-                    0.2126, 0.7152, 0.0722, 0, 0,
-                    0.2126, 0.7152, 0.0722, 0, 0,
-                    0, 0, 0, 1, 0,
-                  ]),
-                  child: IgnorePointer(
-                      child: Stack(alignment: Alignment.center, children: [
-                    const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.signal_wifi_statusbar_connected_no_internet_4, size: 100),
-                        Text("No internet"),
-                      ],
-                    ),
-                    Opacity(opacity: 0.1, child: child)
-                  ])),
-                );
-              } else {
-                return child;
-              }
-            }
-          },
-        ),
+        child: isOffline ? OfflineOverlay(child: widget.child) : widget.child,
       ),
     );
   }
